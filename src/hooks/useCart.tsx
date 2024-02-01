@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useContext, useState } from 'react';
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
 import { Product, Stock } from '../types';
@@ -70,12 +70,13 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         .then(res => res.data)
         .catch(() => {
           toast.error("Erro na adição do produto");
-          
         });
       
-      if(!newCart) {
+      if(!newProduct) {
+        toast.error("Erro na adição do produto");
         return
       }
+
       newProduct.amount = 1;
       updateCart([...newCart, newProduct]);
       // setCart([...newCart, newProduct]);
@@ -107,6 +108,13 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
+      const product = cart.find((product) => product.id === productId);
+      
+      if(!product) {
+        toast.error("Erro na alteração de quantidade do produto");
+        return;
+      }
+      
       if(amount < 1) {
         return
       }
