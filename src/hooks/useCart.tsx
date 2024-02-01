@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { api } from '../services/api';
 import { Product, Stock } from '../types';
@@ -32,8 +32,18 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
+  const previousCartRef = useRef<Product[]>();
+
   useEffect(() => {
-    localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
+    previousCartRef.current = cart
+  });
+
+  const cartPreviousValue = previousCartRef.current ?? cart;
+  
+  useEffect(() => {
+    if(cartPreviousValue !== cart) {
+      localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
+    } 
   }, [cart]);
 
   const addProduct = async (productId: number) => {
@@ -59,15 +69,21 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         }
   
         if(product) {
-          updateProductAmount({productId: productId, amount: product.amount})
+          updateProductAmount({productId: productId, amount: product.amount + 1})
           return
         }
       }
 
       const newProduct = await api.get(`products/${productId}`)
         .then(res => res.data)
-        .catch(() => toast.error("Erro na adição do produto"));
-
+        .catch(() => {
+          toast.error("Erro na adição do produto");
+          
+        });
+      
+      if(!newCart) {
+        return
+      }
       newProduct.amount = 1;
       setCart([...newCart, newProduct]);
 
@@ -78,6 +94,13 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
   const removeProduct = (productId: number) => {
     try {
+      const product = cart.find((product) => product.id === productId);
+
+      if(!product) {
+        toast.error("Erro na remoção do produto");
+        return
+      }
+
       const newCart: Product[] = cart.filter((product) => product.id !== productId);
       setCart([...newCart]);
     } catch {
@@ -90,7 +113,7 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     amount,
   }: UpdateProductAmount) => {
     try {
-      if(amount <= 0) {
+      if(amount < 1) {
         return
       }
 
@@ -98,14 +121,14 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         .then(res => res.data.amount)
         .catch(() => toast.error("Erro na alteração de quantidade do produto"));
       
-      if(stockAmount <= amount) {
+      if(stockAmount < amount) {
         toast.error("Quantidade solicitada fora de estoque");
         return
       }
 
       const newCart: Product[] = cart.map(product => {
         if(product.id === productId) {
-          product.amount = amount + 1;
+          product.amount = amount;
           return product;
         }
         return product;
