@@ -31,20 +31,12 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
 
     return [];
   });
-
-  const previousCartRef = useRef<Product[]>();
-
-  useEffect(() => {
-    previousCartRef.current = cart
-  });
-
-  const cartPreviousValue = previousCartRef.current ?? cart;
   
-  useEffect(() => {
-    if(cartPreviousValue !== cart) {
-      localStorage.setItem("@RocketShoes:cart", JSON.stringify(cart));
-    } 
-  }, [cart]);
+  function updateCart(newCart: Product[]) {
+    setCart([...newCart]);
+    localStorage.setItem("@RocketShoes:cart", JSON.stringify(newCart));
+  } 
+  
 
   const addProduct = async (productId: number) => {
 
@@ -85,7 +77,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         return
       }
       newProduct.amount = 1;
-      setCart([...newCart, newProduct]);
+      updateCart([...newCart, newProduct]);
+      // setCart([...newCart, newProduct]);
 
     } catch {
       toast.error("Erro na adição do produto");
@@ -102,7 +95,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
       }
 
       const newCart: Product[] = cart.filter((product) => product.id !== productId);
-      setCart([...newCart]);
+      updateCart([...newCart]);
+      // setCart([...newCart]);
     } catch {
       toast.error("Erro na remoção do produto");
     }
@@ -133,7 +127,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
         }
         return product;
       });
-      setCart([...newCart]);
+      updateCart([...newCart]);
+      // setCart([...newCart]);
     } catch {
       toast.error("Erro na alteração de quantidade do produto");
     }
